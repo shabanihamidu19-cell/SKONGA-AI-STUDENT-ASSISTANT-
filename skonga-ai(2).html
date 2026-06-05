@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="sw">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+<title>SKONGA AI</title>
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=Orbitron:wght@400;600;700;900&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg-primary:#0d0d12;--bg-secondary:#13131c;--bg-card:#1a1a26;--bg-elevated:#212130;
+  --purple-deep:#3b0f6b;--purple-mid:#5b21b6;--purple-main:#7c3aed;--purple-light:#a855f7;--purple-glow:#c084fc;
+  --cyan:#22d3ee;--red:#f43f5e;--green:#10b981;--orange:#f59e0b;
+  --text-primary:#f0eeff;--text-secondary:#a89ec4;--text-muted:#6b648a;
+  --border:rgba(124,58,237,0.18);--shadow-p:0 0 24px rgba(124,58,237,0.25);
+  --r-msg:18px;--font-b:'Sora',sans-serif;--font-brand:'Orbitron',sans-serif;
+  --nav-h:72px;--hdr-h:60px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{font-family:var(--font-b);background:var(--bg-primary);color:var(--text-primary);display:flex;justify-content:center;align-items:center;min-height:100vh}
+
+/* ── APP ── */
+#app{width:100%;max-width:430px;height:100svh;display:flex;flex-direction:column;background:var(--bg-primary);position:relative;overflow:hidden}
+
+/* ── HEADER ── */
+header{height:var(--hdr-h);display:flex;align-items:center;justify-content:space-between;padding:0 18px;background:var(--bg-secondary);border-bottom:1px solid var(--border);position:relative;z-index:20;flex-shrink:0}
+.hbtn{width:40px;height:40px;border:none;background:none;cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:10px;color:var(--text-secondary);transition:background .2s,color .2s}
+.hbtn:hover{background:var(--bg-elevated);color:var(--purple-light)}
+.hbtn svg{width:22px;height:22px}
+.brand{display:flex;align-items:center;gap:10px;font-family:var(--font-brand);font-size:1.15rem;letter-spacing:.04em}
+.brand-logo{width:36px;height:36px;background:linear-gradient(135deg,var(--purple-main),var(--purple-glow));border-radius:10px;display:flex;align-items:center;justify-content:center;box-shadow:0 0 12px rgba(124,58,237,.5)}
+.brand-logo svg{width:22px;height:22px;fill:#fff}
+.brand-name span{color:var(--purple-light)}
+
+/* ── PANELS ── */
+.panel{flex:1;display:none;flex-direction:column;overflow:hidden;animation:fadeUp .3s ease both}
+.panel.active{display:flex}
+
+/* ── CHAT AREA ── */
+#chat-area{flex:1;overflow-y:auto;padding:20px 14px 10px;display:flex;flex-direction:column;gap:14px;scroll-behavior:smooth}
+#chat-area::-webkit-scrollbar{width:3px}
+#chat-area::-webkit-scrollbar-thumb{background:var(--purple-mid);border-radius:10px}
+
+.welcome{display:flex;flex-direction:column;align-items:center;gap:10px;padding:24px 0 8px;animation:fadeDown .6s ease both}
+.ai-avatar-big{width:72px;height:72px;background:radial-gradient(circle at 40% 40%,var(--purple-mid),var(--purple-deep));border-radius:50%;display:flex;align-items:center;justify-content:center;border:2px solid var(--purple-main);box-shadow:0 0 28px rgba(124,58,237,.45)}
+.ai-avatar-big svg{width:38px;height:38px}
+.welcome h2{font-size:1.2rem;font-weight:600}
+.welcome p{font-size:.82rem;color:var(--text-secondary)}
+
+.msg-row{display:flex;gap:8px;animation:fadeUp .35s ease both}
+.msg-row.user{justify-content:flex-end}
+.bot-icon{width:34px;height:34px;flex-shrink:0;background:radial-gradient(circle,var(--purple-mid),var(--purple-deep));border-radius:50%;display:flex;align-items:center;justify-content:center;margin-top:2px;border:1.5px solid var(--purple-main)}
+.bot-icon svg{width:18px;height:18px}
+.bubble{max-width:78%;padding:11px 14px;font-size:.88rem;line-height:1.55;position:relative}
+.msg-row.user .bubble{background:linear-gradient(135deg,var(--purple-main),var(--purple-mid));border-radius:var(--r-msg) var(--r-msg) 4px var(--r-msg);box-shadow:0 4px 18px rgba(124,58,237,.35);color:#fff}
+.msg-row.bot .bubble{background:var(--bg-card);border:1px solid var(--border);border-radius:4px var(--r-msg) var(--r-msg) var(--r-msg);color:var(--text-primary)}
+.bubble .ts{display:flex;align-items:center;gap:4px;font-size:.68rem;color:rgba(255,255,255,.45);margin-top:6px;justify-content:flex-end}
+.msg-row.bot .bubble .ts{color:var(--text-muted)}
+.ts-check svg{width:14px;height:14px}
+.ts-check.read svg{stroke:var(--cyan)}
+.math-step{margin:2px 0;font-family:'Courier New',monospace;font-size:.83rem}
+.math-answer{color:var(--purple-light);font-weight:700;font-size:.9rem;margin-top:4px}
+
+/* ── INPUT ZONE ── */
+.input-zone{flex-shrink:0;padding:10px 14px 6px;background:var(--bg-secondary);border-top:1px solid var(--border)}
+.input-row{display:flex;align-items:center;gap:10px}
+.attach-btn{width:42px;height:42px;border:1.5px solid var(--border);background:var(--bg-card);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;transition:border-color .2s,background .2s;color:var(--purple-light)}
+.attach-btn:hover{border-color:var(--purple-main);background:var(--bg-elevated)}
+.attach-btn svg{width:20px;height:20px}
+.msg-input{flex:1;background:var(--bg-card);border:1.5px solid var(--border);border-radius:22px;padding:11px 16px;font-family:var(--font-b);font-size:.88rem;color:var(--text-primary);outline:none;transition:border-color .2s;resize:none;max-height:100px;line-height:1.4}
+.msg-input::placeholder{color:var(--text-muted)}
+.msg-input:focus{border-color:var(--purple-main)}
+.send-btn{width:42px;height:42px;background:linear-gradient(135deg,var(--purple-main),var(--purple-mid));border:none;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;box-shadow:0 0 14px rgba(124,58,237,.45);transition:transform .15s,box-shadow .2s;color:#fff}
+.send-btn:hover{transform:scale(1.08);box-shadow:0 0 20px rgba(124,58,237,.65)}
+.send-btn:active{transform:scale(.95)}
+.send-btn svg{width:18px;height:18px}
+
+/* ── ATTACH POPUP ── */
+.attach-popup{position:absolute;bottom:calc(var(--nav-h) + 68px);left:14px;width:216px;background:var(--bg-elevated);border:1px solid var(--border);border-radius:16px;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,.55),var(--shadow-p);z-index:50;display:none;animation:popUp .22s ease both}
+.attach-popup.open{display:block}
+.att-item{display:flex;align-items:center;gap:14px;padding:13px 18px;cursor:pointer;font-size:.88rem;color:var(--text-primary);transition:background .15s;border-bottom:1px solid rgba(124,58,237,.08)}
+.att-item:last-child{border-bottom:none}
+.att-item:hover{background:rgba(124,58,237,.12)}
+.att-item svg{width:20px;height:20px;color:var(--purple-light);flex-shrink:0}
+
+/* ── SIDEBAR (Chat History) ── */
+#sidebar{position:absolute;top:0;left:-290px;width:280px;height:100%;background:var(--bg-secondary);border-right:1px solid var(--border);z-index:60;transition:left .28s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column;padding-top:0}
+#sidebar.open{left:0}
+.sidebar-hdr{display:flex;align-items:center;justify-content:space-between;padding:18px 16px 12px;border-bottom:1px solid var(--border)}
+.sidebar-hdr span{font-family:var(--font-brand);font-size:.85rem;color:var(--purple-light);letter-spacing:.06em}
+.sidebar-close{width:32px;height:32px;border:none;background:none;cursor:pointer;color:var(--text-secondary);display:flex;align-items:center;justify-content:center;border-radius:8px}
+.sidebar-close:hover{background:var(--bg-elevated);color:var(--text-primary)}
+.sidebar-close svg{width:18px;height:18px}
+.sidebar-new{display:flex;align-items:center;gap:10px;padding:12px 16px;cursor:pointer;font-size:.85rem;color:var(--purple-light);border-bottom:1px solid var(--border);transition:background .15s}
+.sidebar-new:hover{background:rgba(124,58,237,.1)}
+.sidebar-new svg{width:18px;height:18px}
+.sidebar-section{padding:10px 16px 4px;font-size:.68rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.1em}
+.chat-hist-list{flex:1;overflow-y:auto;padding:4px 8px 16px}
+.chat-hist-list::-webkit-scrollbar{width:2px}
+.chat-hist-list::-webkit-scrollbar-thumb{background:var(--purple-mid)}
+.hist-item{display:flex;align-items:flex-start;gap:10px;padding:10px 8px;border-radius:10px;cursor:pointer;transition:background .15s;position:relative}
+.hist-item:hover{background:rgba(124,58,237,.1)}
+.hist-item.active-chat{background:rgba(124,58,237,.18)}
+.hist-icon{width:32px;height:32px;flex-shrink:0;background:var(--bg-elevated);border-radius:8px;display:flex;align-items:center;justify-content:center;border:1px solid var(--border)}
+.hist-icon svg{width:16px;height:16px;color:var(--purple-light)}
+.hist-info{flex:1;min-width:0}
+.hist-title{font-size:.82rem;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--text-primary)}
+.hist-preview{font-size:.72rem;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+.hist-time{font-size:.65rem;color:var(--text-muted);white-space:nowrap;margin-top:2px}
+
+/* ── NOTES PANEL ── */
+#notes-panel{background:var(--bg-primary)}
+.notes-header{padding:16px 16px 8px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.notes-header h3{font-size:1rem;font-weight:600;font-family:var(--font-brand);letter-spacing:.04em;color:var(--purple-light)}
+.notes-add-btn{width:34px;height:34px;background:linear-gradient(135deg,var(--purple-main),var(--purple-mid));border:none;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;color:#fff;box-shadow:0 0 10px rgba(124,58,237,.4)}
+.notes-add-btn svg{width:16px;height:16px}
+.notes-list{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:10px}
+.notes-list::-webkit-scrollbar{width:2px}
+.notes-list::-webkit-scrollbar-thumb{background:var(--purple-mid)}
+.note-card{background:var(--bg-card);border:1px solid var(--border);border-radius:14px;padding:14px;cursor:pointer;transition:border-color .2s,box-shadow .2s;position:relative}
+.note-card:hover{border-color:var(--purple-main);box-shadow:0 0 12px rgba(124,58,237,.2)}
+.note-card-title{font-size:.88rem;font-weight:600;margin-bottom:4px;color:var(--text-primary)}
+.note-card-body{font-size:.78rem;color:var(--text-secondary);line-height:1.5;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.note-card-date{font-size:.65rem;color:var(--text-muted);margin-top:8px}
+.note-del{position:absolute;top:10px;right:10px;width:24px;height:24px;background:rgba(244,63,94,.15);border:none;border-radius:6px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--red);opacity:0;transition:opacity .2s}
+.note-card:hover .note-del{opacity:1}
+.note-del svg{width:13px;height:13px}
+.notes-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:var(--text-muted);font-size:.85rem}
+.notes-empty svg{width:40px;height:40px;opacity:.35}
+
+/* ── NOTE EDITOR MODAL ── */
+.modal-overlay{position:absolute;inset:0;background:rgba(0,0,0,.65);z-index:70;display:flex;align-items:flex-end;animation:fadeIn .2s ease both}
+.modal-overlay.hidden{display:none}
+.note-editor{width:100%;background:var(--bg-secondary);border-radius:22px 22px 0 0;padding:20px 18px 24px;border-top:1px solid var(--border);animation:slideUp .25s ease both}
+.note-editor-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.note-editor-hdr span{font-size:.95rem;font-weight:600;font-family:var(--font-brand);color:var(--purple-light)}
+.note-editor-close{width:30px;height:30px;border:none;background:var(--bg-elevated);border-radius:8px;cursor:pointer;color:var(--text-secondary);display:flex;align-items:center;justify-content:center}
+.note-editor-close svg{width:16px;height:16px}
+.note-title-inp{width:100%;background:var(--bg-card);border:1.5px solid var(--border);border-radius:10px;padding:10px 13px;font-family:var(--font-b);font-size:.9rem;font-weight:600;color:var(--text-primary);outline:none;margin-bottom:10px}
+.note-title-inp:focus{border-color:var(--purple-main)}
+.note-body-inp{width:100%;background:var(--bg-card);border:1.5px solid var(--border);border-radius:10px;padding:10px 13px;font-family:var(--font-b);font-size:.85rem;color:var(--text-primary);outline:none;resize:none;height:150px;line-height:1.5}
+.note-body-inp:focus{border-color:var(--purple-main)}
+.note-save-btn{width:100%;margin-top:12px;padding:12px;background:linear-gradient(135deg,var(--purple-main),var(--purple-mid));border:none;border-radius:12px;color:#fff;font-family:var(--font-b);font-size:.9rem;font-weight:600;cursor:pointer;box-shadow:0 0 14px rgba(124,58,237,.35)}
+
+/* ── SCAN PANEL ── */
+#scan-panel{background:var(--bg-primary);position:relative}
+.scan-inner{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;gap:18px;position:relative}
+#camera-preview{width:100%;max-height:55vh;object-fit:cover;border-radius:16px;display:none;border:2px solid var(--purple-main);box-shadow:0 0 20px rgba(124,58,237,.3)}
+#canvas-snap{display:none}
+.scan-placeholder{width:100%;aspect-ratio:3/4;max-height:50vh;border:2px dashed var(--purple-mid);border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:var(--text-muted);font-size:.85rem}
+.scan-placeholder svg{width:48px;height:48px;opacity:.4}
+#scan-captured{width:100%;max-height:42vh;object-fit:contain;border-radius:14px;display:none;border:2px solid var(--purple-light);box-shadow:0 0 16px rgba(124,58,237,.3)}
+.scan-prompt-row{width:100%;display:none;flex-direction:column;gap:10px;animation:fadeUp .3s ease both}
+.scan-prompt-row.visible{display:flex}
+.scan-prompt-inp{width:100%;background:var(--bg-card);border:1.5px solid var(--border);border-radius:12px;padding:10px 14px;font-family:var(--font-b);font-size:.85rem;color:var(--text-primary);outline:none;resize:none;height:70px}
+.scan-prompt-inp:focus{border-color:var(--purple-main)}
+.scan-prompt-inp::placeholder{color:var(--text-muted)}
+.scan-btn-row{display:flex;gap:10px;width:100%}
+.scan-action-btn{flex:1;padding:12px;border:none;border-radius:12px;font-family:var(--font-b);font-size:.84rem;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:opacity .2s,transform .15s}
+.scan-action-btn:active{transform:scale(.96)}
+.btn-camera{background:linear-gradient(135deg,var(--purple-main),var(--purple-mid));color:#fff;box-shadow:0 0 12px rgba(124,58,237,.35)}
+.btn-gallery{background:var(--bg-elevated);color:var(--text-primary);border:1px solid var(--border)}
+.btn-send-scan{background:linear-gradient(135deg,var(--cyan),#0ea5e9);color:#fff;box-shadow:0 0 12px rgba(34,211,238,.3)}
+.btn-retake{background:var(--bg-elevated);color:var(--text-primary);border:1px solid var(--border)}
+.scan-action-btn svg{width:18px;height:18px}
+
+/* ── SCIENTIFIC CALCULATOR ── */
+#calc-panel{background:var(--bg-primary);overflow-y:auto}
+.calc-inner{flex:1;padding:12px 10px 8px;display:flex;flex-direction:column;gap:8px}
+.calc-display{background:var(--bg-card);border:1px solid var(--border);border-radius:16px;padding:14px 18px;min-height:90px;display:flex;flex-direction:column;justify-content:flex-end;align-items:flex-end;gap:4px}
+.calc-expr{font-size:.82rem;color:var(--text-muted);min-height:18px;word-break:break-all;text-align:right}
+.calc-result{font-size:2rem;font-weight:600;font-family:var(--font-brand);color:var(--text-primary);word-break:break-all;text-align:right;line-height:1.2}
+.calc-result.small{font-size:1.3rem}
+.calc-mode-row{display:flex;gap:8px;justify-content:flex-end}
+.calc-mode-btn{padding:5px 14px;border:1.5px solid var(--border);background:var(--bg-card);border-radius:20px;font-size:.72rem;font-family:var(--font-b);color:var(--text-secondary);cursor:pointer;transition:all .2s}
+.calc-mode-btn.active{background:rgba(124,58,237,.25);border-color:var(--purple-main);color:var(--purple-light)}
+.calc-grid{display:grid;gap:6px}
+.calc-grid.sci{grid-template-columns:repeat(5,1fr)}
+.calc-grid.basic{grid-template-columns:repeat(4,1fr)}
+.cbtn{height:52px;border:none;border-radius:12px;font-family:var(--font-b);font-size:.88rem;font-weight:500;cursor:pointer;transition:transform .1s,box-shadow .15s,background .15s;display:flex;align-items:center;justify-content:center;user-select:none}
+.cbtn:active{transform:scale(.92)}
+.cbtn.num{background:var(--bg-elevated);color:var(--text-primary);border:1px solid rgba(255,255,255,.06)}
+.cbtn.num:hover{background:#2a2a3d;border-color:var(--border)}
+.cbtn.op{background:rgba(124,58,237,.2);color:var(--purple-light);border:1px solid rgba(124,58,237,.3)}
+.cbtn.op:hover{background:rgba(124,58,237,.35)}
+.cbtn.fn{background:var(--bg-card);color:var(--cyan);font-size:.78rem;border:1px solid rgba(34,211,238,.15)}
+.cbtn.fn:hover{background:rgba(34,211,238,.08)}
+.cbtn.eq{background:linear-gradient(135deg,var(--purple-main),var(--purple-mid));color:#fff;font-size:1.1rem;box-shadow:0 0 10px rgba(124,58,237,.4)}
+.cbtn.eq:hover{box-shadow:0 0 18px rgba(124,58,237,.6)}
+.cbtn.clr{background:rgba(244,63,94,.15);color:var(--red);border:1px solid rgba(244,63,94,.2)}
+.cbtn.clr:hover{background:rgba(244,63,94,.28)}
+.cbtn.special{background:rgba(245,158,11,.12);color:var(--orange);border:1px solid rgba(245,158,11,.2);font-size:.78rem}
+.cbtn.zero{grid-column:span 2}
+.cbtn.eq-wide{grid-column:span 2}
+
+/* ── BOTTOM NAV ── */
+nav{height:var(--nav-h);background:var(--bg-secondary);border-top:1px solid var(--border);display:flex;align-items:center;flex-shrink:0}
+.nav-item{flex:1;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;font-size:.65rem;color:var(--text-muted);letter-spacing:.01em;transition:color .2s;border:none;background:none;font-family:var(--font-b);position:relative}
+.nav-item svg{width:24px;height:24px;transition:transform .2s}
+.nav-item.active{color:var(--purple-light)}
+.nav-item.active svg{transform:scale(1.1)}
+.nav-item.active::after{content:'';position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:28px;height:3px;background:var(--purple-light);border-radius:3px 3px 0 0}
+.nav-item:hover:not(.active){color:var(--text-secondary)}
+
+/* ── TYPING ── */
+.typing-row{display:flex;gap:8px;align-items:flex-end}
+.typing-bubble{background:var(--bg-card);border:1px solid var(--border);border-radius:4px var(--r-msg) var(--r-msg) var(--r-msg);padding:12px 16px;display:flex;gap:5px;align-items:center}
+.dot{width:7px;height:7px;background:var(--purple-light);border-radius:50%;animation:bounce 1.2s infinite ease-in-out}
+.dot:nth-child(2){animation-delay:.2s}
+.dot:nth-child(3){animation-delay:.4s}
+
+/* ── OVERLAY ── */
+#overlay{display:none;position:absolute;inset:0;z-index:45}
+#overlay.open{display:block}
+
+/* ── ANIMATIONS ── */
+@keyframes fadeDown{from{opacity:0;transform:translateY(-16px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+@keyframes popUp{from{opacity:0;transform:translateY(12px) scale(.95)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes bounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-6px)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes slideUp{from{transform:translateY(40px)}to{transform:translateY(0)}}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- HEADER -->
+<header>
+  <button class="hbtn" id="menuBtn" aria-label="Menu">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+  </button>
+  <div class="brand">
+    <div class="brand-logo"><svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg></div>
+    <span class="brand-name">SKONGA <span>AI</span></span>
+  </div>
+  <button class="hbtn" id="editBtn" aria-label="New Chat">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+  </button>
+</header>
+
+<!-- SIDEBAR -->
+<div id="sidebar">
+  <div class="sidebar-hdr">
+    <span>SKONGA AI</span>
+    <button class="sidebar-close" id="sidebarClose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+  </div>
+  <div class="sidebar-new" onclick="newChat()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    Mazungumzo Mapya
+  </div>
+  <div class="sidebar-section">Leo</div>
+  <div class="chat-hist-list" id="chatHistList"></div>
+</div>
+
+<!-- OVERLAY (closes sidebar & attach popup) -->
+<div id="overlay"></div>
+
+<!-- ═══ CHAT PANEL ═══ -->
+<div class="panel active" id="chat-panel">
+  <div id="chat-area" role="log" aria-live="polite">
+    <div class="welcome">
+      <div class="ai-avatar-big">
+        <svg viewBox="0 0 50 50" fill="none"><circle cx="25" cy="25" r="20" stroke="#a855f7" stroke-width="2"/><path d="M15 25 Q20 15 25 25 Q30 35 35 25" stroke="#c084fc" stroke-width="2.5" fill="none" stroke-linecap="round"/><circle cx="17" cy="22" r="2.5" fill="#7c3aed"/><circle cx="33" cy="22" r="2.5" fill="#7c3aed"/><path d="M20 31 Q25 35 30 31" stroke="#a855f7" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+      </div>
+      <h2>Hello! I'm SKONGA AI</h2>
+      <p>How can I help you today?</p>
+    </div>
+    <div class="msg-row user">
+      <div class="bubble">Solve this math problem<br>2x + 5 = 15<div class="ts">10:30 AM<span class="ts-check read"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/><polyline points="16 6 12 10"/></svg></span></div></div>
+    </div>
+    <div class="msg-row bot">
+      <div class="bot-icon"><svg viewBox="0 0 50 50" fill="none"><circle cx="25" cy="25" r="20" stroke="#a855f7" stroke-width="2"/><path d="M15 25 Q20 15 25 25 Q30 35 35 25" stroke="#c084fc" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg></div>
+      <div class="bubble">Sure! Let's solve it step by step.<div class="math-step">2x + 5 = 15</div><div class="math-step">2x = 15 - 5</div><div class="math-step">2x = 10</div><div class="math-step">x = 10 / 2</div><div class="math-answer">x = 5</div><div class="ts">10:30 AM</div></div>
+    </div>
+    <div class="msg-row user">
+      <div class="bubble">Thanks!<div class="ts">10:31 AM<span class="ts-check read"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/><polyline points="16 6 12 10"/></svg></span></div></div>
+    </div>
+    <div class="msg-row bot">
+      <div class="bot-icon"><svg viewBox="0 0 50 50" fill="none"><circle cx="25" cy="25" r="20" stroke="#a855f7" stroke-width="2"/><path d="M15 25 Q20 15 25 25 Q30 35 35 25" stroke="#c084fc" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg></div>
+      <div class="bubble">You're welcome! If you have more questions, feel free to ask.<div class="ts">10:31 AM</div></div>
+    </div>
+  </div>
+
+  <!-- Attach Popup -->
+  <div class="attach-popup" id="attachPopup">
+    <div class="att-item" onclick="triggerAttach('camera')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+      Scan Question
+    </div>
+    <div class="att-item" onclick="triggerAttach('image')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+      Upload Image
+    </div>
+    <div class="att-item" onclick="triggerAttach('pdf')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      Upload PDF
+    </div>
+    <div class="att-item" onclick="triggerAttach('file')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+      Upload File
+    </div>
+  </div>
+
+  <!-- Input -->
+  <div class="input-zone">
+    <div class="input-row">
+      <button class="attach-btn" id="attachToggle" aria-label="Attach">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      </button>
+      <textarea id="msgInput" class="msg-input" placeholder="Message SKONGA AI..." rows="1" aria-label="Andika ujumbe"></textarea>
+      <button class="send-btn" id="sendBtn" aria-label="Tuma">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ NOTES PANEL ═══ -->
+<div class="panel" id="notes-panel">
+  <div class="notes-header">
+    <h3>My Notes</h3>
+    <button class="notes-add-btn" id="notesAddBtn" aria-label="Add note">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    </button>
+  </div>
+  <div class="notes-list" id="notesList">
+    <div class="notes-empty" id="notesEmpty">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+      Bado hauna maelezo yoyote.<br>Bonyeza + kuongeza.
+    </div>
+  </div>
+  <!-- Note Editor Modal -->
+  <div class="modal-overlay hidden" id="noteModal">
+    <div class="note-editor">
+      <div class="note-editor-hdr">
+        <span id="noteModalTitle">Maelezo Mapya</span>
+        <button class="note-editor-close" id="noteModalClose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+      </div>
+      <input type="text" class="note-title-inp" id="noteTitleInp" placeholder="Kichwa cha maelezo..."/>
+      <textarea class="note-body-inp" id="noteBodyInp" placeholder="Andika maelezo yako hapa..."></textarea>
+      <button class="note-save-btn" id="noteSaveBtn">Hifadhi Maelezo</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SCAN PANEL ═══ -->
+<div class="panel" id="scan-panel">
+  <div class="scan-inner">
+    <video id="camera-preview" autoplay playsinline muted></video>
+    <canvas id="canvas-snap"></canvas>
+    <img id="scan-captured" alt="Picha iliyopigwa"/>
+    <div class="scan-placeholder" id="scanPlaceholder">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+      Piga picha ya swali lako
+    </div>
+    <div class="scan-prompt-row" id="scanPromptRow">
+      <textarea class="scan-prompt-inp" id="scanPromptInp" placeholder="Uliza swali kuhusu picha (hiari)... Mfano: Suluhisha equation hii"></textarea>
+      <div class="scan-btn-row">
+        <button class="scan-action-btn btn-retake" onclick="retakeScan()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.5"/></svg>
+          Piga Tena
+        </button>
+        <button class="scan-action-btn btn-send-scan" onclick="sendScanToChat()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          Tuma kwa AI
+        </button>
+      </div>
+    </div>
+    <div class="scan-btn-row" id="scanInitBtns">
+      <button class="scan-action-btn btn-camera" onclick="startCamera()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        Fungua Kamera
+      </button>
+      <button class="scan-action-btn btn-gallery" onclick="document.getElementById('fileGallery').click()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        Galeria
+      </button>
+    </div>
+    <!-- snap button shown when camera is live -->
+    <button class="scan-action-btn btn-camera" id="snapBtn" style="display:none;width:100%" onclick="snapPhoto()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3" fill="currentColor"/></svg>
+      Piga Picha
+    </button>
+  </div>
+</div>
+
+<!-- ═══ CALCULATOR PANEL ═══ -->
+<div class="panel" id="calc-panel">
+  <div class="calc-inner">
+    <div class="calc-display">
+      <div class="calc-expr" id="calcExpr"></div>
+      <div class="calc-result" id="calcResult">0</div>
+    </div>
+    <div class="calc-mode-row">
+      <button class="calc-mode-btn active" id="modeSci" onclick="setCalcMode('sci')">Scientific</button>
+      <button class="calc-mode-btn" id="modeBasic" onclick="setCalcMode('basic')">Basic</button>
+    </div>
+    <!-- Scientific grid -->
+    <div class="calc-grid sci" id="sciGrid">
+      <button class="cbtn fn" onclick="calcFn('sin(')">sin</button>
+      <button class="cbtn fn" onclick="calcFn('cos(')">cos</button>
+      <button class="cbtn fn" onclick="calcFn('tan(')">tan</button>
+      <button class="cbtn fn" onclick="calcFn('log(')">log</button>
+      <button class="cbtn fn" onclick="calcFn('ln(')">ln</button>
+
+      <button class="cbtn fn" onclick="calcFn('asin(')">sin⁻¹</button>
+      <button class="cbtn fn" onclick="calcFn('acos(')">cos⁻¹</button>
+      <button class="cbtn fn" onclick="calcFn('atan(')">tan⁻¹</button>
+      <button class="cbtn fn" onclick="calcFn('sqrt(')">&#x221a;</button>
+      <button class="cbtn fn" onclick="calcFn('^')">x^y</button>
+
+      <button class="cbtn special" onclick="calcFn('pi')">&#960;</button>
+      <button class="cbtn special" onclick="calcFn('e')">e</button>
+      <button class="cbtn fn" onclick="calcFn('(')">(</button>
+      <button class="cbtn fn" onclick="calcFn(')')">)</button>
+      <button class="cbtn fn" onclick="calcFn('!')">n!</button>
+
+      <button class="cbtn clr" onclick="calcClear()">AC</button>
+      <button class="cbtn clr" onclick="calcDel()">&#9003;</button>
+      <button class="cbtn op" onclick="calcOp('%')">%</button>
+      <button class="cbtn op" onclick="calcOp('/')">&#247;</button>
+      <button class="cbtn fn" onclick="calcFn('1/')">1/x</button>
+
+      <button class="cbtn num" onclick="calcNum('7')">7</button>
+      <button class="cbtn num" onclick="calcNum('8')">8</button>
+      <button class="cbtn num" onclick="calcNum('9')">9</button>
+      <button class="cbtn op" onclick="calcOp('*')">&#215;</button>
+      <button class="cbtn fn" onclick="calcFn('x²')">x&#178;</button>
+
+      <button class="cbtn num" onclick="calcNum('4')">4</button>
+      <button class="cbtn num" onclick="calcNum('5')">5</button>
+      <button class="cbtn num" onclick="calcNum('6')">6</button>
+      <button class="cbtn op" onclick="calcOp('-')">&#8722;</button>
+      <button class="cbtn fn" onclick="calcFn('abs(')">|x|</button>
+
+      <button class="cbtn num" onclick="calcNum('1')">1</button>
+      <button class="cbtn num" onclick="calcNum('2')">2</button>
+      <button class="cbtn num" onclick="calcNum('3')">3</button>
+      <button class="cbtn op" onclick="calcOp('+')">+</button>
+      <button class="cbtn eq" style="grid-row:span 2" onclick="calcEquals()">=</button>
+
+      <button class="cbtn num" onclick="calcNum('0')" style="grid-column:span 2">0</button>
+      <button class="cbtn num" onclick="calcNum('.')">.</button>
+      <button class="cbtn fn" onclick="calcToggleSign()">+/-</button>
+    </div>
+    <!-- Basic grid -->
+    <div class="calc-grid basic" id="basicGrid" style="display:none">
+      <button class="cbtn clr" onclick="calcClear()">AC</button>
+      <button class="cbtn clr" onclick="calcDel()">&#9003;</button>
+      <button class="cbtn op" onclick="calcOp('%')">%</button>
+      <button class="cbtn op" onclick="calcOp('/')">&#247;</button>
+      <button class="cbtn num" onclick="calcNum('7')">7</button>
+      <button class="cbtn num" onclick="calcNum('8')">8</button>
+      <button class="cbtn num" onclick="calcNum('9')">9</button>
+      <button class="cbtn op" onclick="calcOp('*')">&#215;</button>
+      <button class="cbtn num" onclick="calcNum('4')">4</button>
+      <button class="cbtn num" onclick="calcNum('5')">5</button>
+      <button class="cbtn num" onclick="calcNum('6')">6</button>
+      <button class="cbtn op" onclick="calcOp('-')">&#8722;</button>
+      <button class="cbtn num" onclick="calcNum('1')">1</button>
+      <button class="cbtn num" onclick="calcNum('2')">2</button>
+      <button class="cbtn num" onclick="calcNum('3')">3</button>
+      <button class="cbtn op" onclick="calcOp('+')">+</button>
+      <button class="cbtn num zero" onclick="calcNum('0')">0</button>
+      <button class="cbtn num" onclick="calcNum('.')">.</button>
+      <button class="cbtn eq eq-wide" onclick="calcEquals()">=</button>
+    </div>
+  </div>
+</div>
+
+<!-- BOTTOM NAV -->
+<nav>
+  <button class="nav-item active" id="nav-chat" onclick="switchTab('chat')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><circle cx="9" cy="10" r="1" fill="currentColor"/><circle cx="12" cy="10" r="1" fill="currentColor"/><circle cx="15" cy="10" r="1" fill="currentColor"/></svg>
+    Chat
+  </button>
+  <button class="nav-item" id="nav-notes" onclick="switchTab('notes')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+    Notes
+  </button>
+  <button class="nav-item" id="nav-scan" onclick="switchTab('scan')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+    Scan
+  </button>
+  <button class="nav-item" id="nav-calc" onclick="switchTab('calc')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="10" y2="10"/><line x1="13" y1="10" x2="15" y2="10"/><line x1="8" y1="14" x2="10" y2="14"/><line x1="13" y1="14" x2="15" y2="14"/><line x1="8" y1="18" x2="10" y2="18"/><line x1="13" y1="18" x2="15" y2="18"/></svg>
+    Calculator
+  </button>
+</nav>
+
+<!-- Hidden inputs -->
+<input type="file" id="fileCamera" accept="image/*" capture="environment" style="display:none"/>
+<input type="file" id="fileImage"  accept="image/*" style="display:none"/>
+<input type="file" id="filePDF"    accept="application/pdf" style="display:none"/>
+<input type="file" id="fileGeneric" style="display:none"/>
+<input type="file" id="fileGallery" accept="image/*" style="display:none"/>
+</div>
+
+<script>
+/* ══════════════════════════════════════
+   UTILS
+══════════════════════════════════════ */
+const $ = id => document.getElementById(id);
+function fmtTime(d){ return (d||new Date()).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit',hour12:true}); }
+function scrollBottom(){ const c=$('chat-area'); c.scrollTo({top:c.scrollHeight,behavior:'smooth'}); }
+
+/* ══════════════════════════════════════
+   SIDEBAR / CHAT HISTORY
+══════════════════════════════════════ */
+let chatSessions = [];   // [{id, title, preview, time, messages:[]}]
+let activeChatId = null;
+
+function openSidebar(){
+  $('sidebar').classList.add('open');
+  $('overlay').classList.add('open');
+}
+function closeSidebar(){
+  $('sidebar').classList.remove('open');
+  $('overlay').classList.remove('open');
+}
+$('menuBtn').addEventListener('click', e=>{ e.stopPropagation(); openSidebar(); });
+$('sidebarClose').addEventListener('click', closeSidebar);
+
+function renderHistList(){
+  const list = $('chatHistList');
+  list.innerHTML = '';
+  if(!chatSessions.length){
+    list.innerHTML = '<div style="padding:16px;font-size:.8rem;color:var(--text-muted);text-align:center">Hakuna mazungumzo bado</div>';
+    return;
+  }
+  chatSessions.slice().reverse().forEach(s=>{
+    const item = document.createElement('div');
+    item.className = 'hist-item' + (s.id===activeChatId?' active-chat':'');
+    item.innerHTML = `
+      <div class="hist-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+      <div class="hist-info">
+        <div class="hist-title">${s.title}</div>
+        <div class="hist-preview">${s.preview}</div>
+        <div class="hist-time">${s.time}</div>
+      </div>`;
+    item.onclick = ()=>{ loadSession(s.id); closeSidebar(); };
+    list.appendChild(item);
+  });
+}
+
+function saveCurrentSession(){
+  const msgs = $('chat-area').querySelectorAll('.msg-row');
+  if(!msgs.length) return;
+  const firstUser = $('chat-area').querySelector('.msg-row.user .bubble');
+  const title = firstUser ? firstUser.textContent.replace(/\d+:\d+.*$/,'').trim().slice(0,40) : 'Mazungumzo';
+  const lastBot = [...$('chat-area').querySelectorAll('.msg-row.bot .bubble')].pop();
+  const preview = lastBot ? lastBot.textContent.replace(/\d+:\d+.*$/,'').trim().slice(0,50) : '';
+  const id = activeChatId || ('chat_'+ Date.now());
+  activeChatId = id;
+  const existing = chatSessions.find(s=>s.id===id);
+  if(existing){
+    existing.title=title; existing.preview=preview; existing.html=$('chat-area').innerHTML;
+  } else {
+    chatSessions.push({id, title, preview, time: fmtTime(new Date()), html:$('chat-area').innerHTML});
+  }
+  renderHistList();
+}
+
+function loadSession(id){
+  const s = chatSessions.find(x=>x.id===id);
+  if(!s) return;
+  saveCurrentSession();
+  activeChatId = id;
+  $('chat-area').innerHTML = s.html;
+  scrollBottom();
+  switchTab('chat');
+  renderHistList();
+}
+
+function newChat(){
+  saveCurrentSession();
+  activeChatId = null;
+  $('chat-area').innerHTML = `
+    <div class="welcome">
+      <div class="ai-avatar-big"><svg viewBox="0 0 50 50" fill="none"><circle cx="25" cy="25" r="20" stroke="#a855f7" stroke-width="2"/><path d="M15 25 Q20 15 25 25 Q30 35 35 25" stroke="#c084fc" stroke-width="2.5" fill="none" stroke-linecap="round"/><circle cx="17" cy="22" r="2.5" fill="#7c3aed"/><circle cx="33" cy="22" r="2.5" fill="#7c3aed"/><path d="M20 31 Q25 35 30 31" stroke="#a855f7" stroke-width="2" fill="none" stroke-linecap="round"/></svg></div>
+      <h2>Hello! I'm SKONGA AI</h2>
+      <p>How can I help you today?</p>
+    </div>`;
+  closeSidebar();
+  switchTab('chat');
+  renderHistList();
+}
+$('editBtn').addEventListener('click', newChat);
+
+/* ══════════════════════════════════════
+   ATTACH POPUP (+ button)
+══════════════════════════════════════ */
+const attachToggle = $('attachToggle');
+const attachPopup  = $('attachPopup');
+
+function openAttach(e){
+  e.stopPropagation();
+  const isOpen = attachPopup.classList.contains('open');
+  closeAllPopups();
+  if(!isOpen){
+    attachPopup.classList.add('open');
+    $('overlay').classList.add('open');
+  }
+}
+function closeAllPopups(){
+  attachPopup.classList.remove('open');
+  $('overlay').classList.remove('open');
+}
+attachToggle.addEventListener('click', openAttach);
+$('overlay').addEventListener('click', ()=>{ closeAllPopups(); closeSidebar(); });
+
+function triggerAttach(type){
+  closeAllPopups();
+  const map={camera:'fileCamera',image:'fileImage',pdf:'filePDF',file:'fileGeneric'};
+  $(map[type]).click();
+}
+
+/* ── File selected handler ── */
+['fileCamera','fileImage','fileGallery'].forEach(id=>{
+  $(id).addEventListener('change', function(){
+    if(this.files[0]){
+      const file = this.files[0];
+      const reader = new FileReader();
+      reader.onload = e => handleImageAttachment(e.target.result, file.name);
+      reader.readAsDataURL(file);
+    }
+  });
+});
+['filePDF','fileGeneric'].forEach(id=>{
+  $(id).addEventListener('change', function(){
+    if(this.files[0]) addMessage(`[Faili: ${this.files[0].name}]`, 'user');
+  });
+});
+
+function handleImageAttachment(dataUrl, name){
+  const ca = $('chat-area');
+  const row = document.createElement('div');
+  row.className = 'msg-row user';
+  row.innerHTML = `<div class="bubble" style="padding:6px"><img src="${dataUrl}" style="max-width:200px;border-radius:10px;display:block"/><div class="ts">${fmtTime()}<span class="ts-check read"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/><polyline points="16 6 12 10"/></svg></span></div></div>`;
+  ca.appendChild(row);
+  scrollBottom();
+  // TODO: Send image to API
+  showTyping();
+  setTimeout(()=>{ hideTyping(); addMessage('Nimepokea picha yako. Jibu halisi litaonekana baada ya kuunganisha API.','bot'); saveCurrentSession(); },1500);
+}
+
+/* ══════════════════════════════════════
+   CHAT — MESSAGES
+══════════════════════════════════════ */
+function addMessage(text, role, time){
+  const ca=$('chat-area');
+  const row=document.createElement('div');
+  row.className=`msg-row ${role}`;
+  const ts=time||fmtTime();
+  if(role==='bot'){
+    const icon=document.createElement('div');
+    icon.className='bot-icon';
+    icon.innerHTML=`<svg viewBox="0 0 50 50" fill="none"><circle cx="25" cy="25" r="20" stroke="#a855f7" stroke-width="2"/><path d="M15 25 Q20 15 25 25 Q30 35 35 25" stroke="#c084fc" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg>`;
+    row.appendChild(icon);
+  }
+  const bubble=document.createElement('div');
+  bubble.className='bubble';
+  bubble.innerHTML=text.replace(/\n/g,'<br>')+
+    `<div class="ts">${ts}${role==='user'?`<span class="ts-check read"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/><polyline points="16 6 12 10"/></svg></span>`:''}</div>`;
+  row.appendChild(bubble);
+  ca.appendChild(row);
+  scrollBottom();
+  return row;
+}
+
+function showTyping(){
+  const ca=$('chat-area');
+  const row=document.createElement('div');
+  row.className='typing-row'; row.id='typingIndicator';
+  row.innerHTML=`<div class="bot-icon"><svg viewBox="0 0 50 50" fill="none"><circle cx="25" cy="25" r="20" stroke="#a855f7" stroke-width="2"/><path d="M15 25 Q20 15 25 25 Q30 35 35 25" stroke="#c084fc" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg></div><div class="typing-bubble"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>`;
+  ca.appendChild(row); scrollBottom();
+}
+function hideTyping(){ const t=$('typingIndicator'); if(t)t.remove(); }
+
+/* ── SEND ── */
+const msgInput=$('msgInput');
+msgInput.addEventListener('input',function(){ this.style.height='auto'; this.style.height=Math.min(this.scrollHeight,100)+'px'; });
+
+async function sendMessage(){
+  const text=msgInput.value.trim(); if(!text) return;
+  addMessage(text,'user');
+  msgInput.value=''; msgInput.style.height='auto';
+  showTyping();
+  // TODO: real API
+  setTimeout(()=>{ hideTyping(); addMessage('Nimepokea ujumbe wako. Jibu halisi litakuja baada ya kuunganisha API.','bot'); saveCurrentSession(); },1500);
+}
+$('sendBtn').addEventListener('click', sendMessage);
+msgInput.addEventListener('keydown', e=>{ if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage();} });
+
+/* ══════════════════════════════════════
+   NOTES
+══════════════════════════════════════ */
+let notes = [];
+let editingNoteId = null;
+
+function renderNotes(){
+  const list=$('notesList');
+  const empty=$('notesEmpty');
+  list.querySelectorAll('.note-card').forEach(n=>n.remove());
+  if(!notes.length){ empty.style.display='flex'; return; }
+  empty.style.display='none';
+  notes.slice().reverse().forEach(n=>{
+    const card=document.createElement('div');
+    card.className='note-card';
+    card.innerHTML=`<div class="note-card-title">${n.title||'Bila kichwa'}</div><div class="note-card-body">${n.body}</div><div class="note-card-date">${n.date}</div><button class="note-del" onclick="deleteNote('${n.id}',event)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg></button>`;
+    card.addEventListener('click',()=>openNoteEditor(n.id));
+    list.appendChild(card);
+  });
+}
+
+function openNoteEditor(id){
+  editingNoteId = id||null;
+  const note = id ? notes.find(n=>n.id===id) : null;
+  $('noteModalTitle').textContent = id ? 'Hariri Maelezo' : 'Maelezo Mapya';
+  $('noteTitleInp').value = note ? note.title : '';
+  $('noteBodyInp').value  = note ? note.body  : '';
+  $('noteModal').classList.remove('hidden');
+}
+function closeNoteEditor(){ $('noteModal').classList.add('hidden'); }
+
+$('notesAddBtn').addEventListener('click',()=>openNoteEditor(null));
+$('noteModalClose').addEventListener('click', closeNoteEditor);
+$('noteSaveBtn').addEventListener('click',()=>{
+  const title=$('noteTitleInp').value.trim();
+  const body=$('noteBodyInp').value.trim();
+  if(!body) return;
+  if(editingNoteId){
+    const n=notes.find(x=>x.id===editingNoteId);
+    if(n){ n.title=title; n.body=body; }
+  } else {
+    notes.push({id:'note_'+Date.now(), title, body, date: new Date().toLocaleDateString('sw',{day:'numeric',month:'short',year:'numeric'})});
+  }
+  closeNoteEditor(); renderNotes();
+});
+function deleteNote(id,e){
+  e.stopPropagation();
+  notes=notes.filter(n=>n.id!==id);
+  renderNotes();
+}
+
+/* ══════════════════════════════════════
+   SCAN TO SOLVE
+══════════════════════════════════════ */
+let cameraStream = null;
+
+async function startCamera(){
+  try{
+    const stream = await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'},audio:false});
+    cameraStream = stream;
+    const vid=$('camera-preview');
+    vid.srcObject=stream; vid.style.display='block';
+    $('scanPlaceholder').style.display='none';
+    $('scanInitBtns').style.display='none';
+    $('snapBtn').style.display='flex';
+  } catch(err){
+    // fallback: open file picker
+    $('fileCamera').click();
+  }
+}
+
+function stopCamera(){
+  if(cameraStream){ cameraStream.getTracks().forEach(t=>t.stop()); cameraStream=null; }
+  $('camera-preview').style.display='none';
+}
+
+function snapPhoto(){
+  const vid=$('camera-preview');
+  const canvas=$('canvas-snap');
+  canvas.width=vid.videoWidth; canvas.height=vid.videoHeight;
+  canvas.getContext('2d').drawImage(vid,0,0);
+  const dataUrl=canvas.toDataURL('image/jpeg',0.92);
+  stopCamera();
+  showCaptured(dataUrl);
+}
+
+function showCaptured(dataUrl){
+  $('scan-captured').src=dataUrl; $('scan-captured').style.display='block';
+  $('scanPlaceholder').style.display='none';
+  $('scanInitBtns').style.display='none';
+  $('snapBtn').style.display='none';
+  $('scanPromptRow').classList.add('visible');
+  $('scanPromptInp').focus();
+}
+
+function retakeScan(){
+  $('scan-captured').style.display='none'; $('scan-captured').src='';
+  $('scanPromptRow').classList.remove('visible');
+  $('scanPlaceholder').style.display='flex';
+  $('scanInitBtns').style.display='flex';
+  $('scanPromptInp').value='';
+}
+
+function sendScanToChat(){
+  const imgSrc=$('scan-captured').src;
+  const prompt=$('scanPromptInp').value.trim()||'Solve/explain this question';
+  // Switch to chat
+  switchTab('chat');
+  // Add image bubble
+  const ca=$('chat-area');
+  const row=document.createElement('div');
+  row.className='msg-row user';
+  row.innerHTML=`<div class="bubble" style="padding:8px 10px"><img src="${imgSrc}" style="max-width:200px;border-radius:10px;display:block;margin-bottom:4px"/><span style="font-size:.85rem">${prompt}</span><div class="ts">${fmtTime()}<span class="ts-check read"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/><polyline points="16 6 12 10"/></svg></span></div></div>`;
+  ca.appendChild(row); scrollBottom();
+  showTyping();
+  // TODO: Send imgSrc (base64) + prompt to OpenAI GPT-4o-mini Vision API
+  setTimeout(()=>{ hideTyping(); addMessage('Nimepokea picha na swali lako. Jibu halisi litaonekana baada ya kuunganisha Vision API.','bot'); saveCurrentSession(); },1800);
+  retakeScan();
+}
+
+// Gallery pick for scan
+$('fileGallery').addEventListener('change', function(){
+  if(this.files[0]){
+    const reader=new FileReader();
+    reader.onload=e=>showCaptured(e.target.result);
+    reader.readAsDataURL(this.files[0]);
+  }
+});
+
+/* ══════════════════════════════════════
+   SCIENTIFIC CALCULATOR
+══════════════════════════════════════ */
+let calcExprStr = '';
+let calcJustEvaled = false;
+
+function setCalcMode(mode){
+  if(mode==='sci'){
+    $('sciGrid').style.display='grid';
+    $('basicGrid').style.display='none';
+    $('modeSci').classList.add('active'); $('modeBasic').classList.remove('active');
+  } else {
+    $('sciGrid').style.display='none';
+    $('basicGrid').style.display='grid';
+    $('modeBasic').classList.add('active'); $('modeSci').classList.remove('active');
+  }
+}
+
+function updateDisplay(){
+  const res=$('calcResult');
+  res.textContent = calcExprStr||'0';
+  res.className='calc-result'+(calcExprStr.length>12?' small':'');
+  $('calcExpr').textContent='';
+}
+
+function calcNum(n){
+  if(calcJustEvaled){ calcExprStr=''; calcJustEvaled=false; }
+  calcExprStr+=n; updateDisplay();
+}
+function calcOp(op){
+  calcJustEvaled=false;
+  calcExprStr+=op; updateDisplay();
+}
+function calcFn(fn){
+  calcJustEvaled=false;
+  if(fn==='pi') calcExprStr+='\u03c0';
+  else if(fn==='e') calcExprStr+='e';
+  else if(fn==='x²'){ calcExprStr+='^2'; }
+  else if(fn==='1/'){ calcExprStr='1/('+calcExprStr+')'; }
+  else calcExprStr+=fn;
+  updateDisplay();
+}
+function calcClear(){ calcExprStr=''; calcJustEvaled=false; $('calcResult').textContent='0'; $('calcExpr').textContent=''; }
+function calcDel(){ calcExprStr=calcExprStr.slice(0,-1); updateDisplay(); }
+function calcToggleSign(){
+  if(calcExprStr && !isNaN(calcExprStr)){
+    calcExprStr = String(-parseFloat(calcExprStr));
+    updateDisplay();
+  }
+}
+function calcEquals(){
+  if(!calcExprStr) return;
+  try{
+    $('calcExpr').textContent = calcExprStr + ' =';
+    let expr = calcExprStr
+      .replace(/\u03c0/g,'Math.PI')
+      .replace(/\be\b/g,'Math.E')
+      .replace(/sin\(/g,'Math.sin(')
+      .replace(/cos\(/g,'Math.cos(')
+      .replace(/tan\(/g,'Math.tan(')
+      .replace(/asin\(/g,'Math.asin(')
+      .replace(/acos\(/g,'Math.acos(')
+      .replace(/atan\(/g,'Math.atan(')
+      .replace(/log\(/g,'Math.log10(')
+      .replace(/ln\(/g,'Math.log(')
+      .replace(/sqrt\(/g,'Math.sqrt(')
+      .replace(/abs\(/g,'Math.abs(')
+      .replace(/\^/g,'**');
+    // factorial
+    expr = expr.replace(/(\d+)!/g,(m,n)=>factorial(parseInt(n)));
+    const result = Function('"use strict";return ('+expr+')')();
+    const formatted = Number.isInteger(result) ? result : parseFloat(result.toPrecision(10));
+    calcExprStr = String(formatted);
+    const res=$('calcResult');
+    res.textContent=calcExprStr;
+    res.className='calc-result'+(calcExprStr.length>12?' small':'');
+    calcJustEvaled=true;
+  } catch(err){
+    $('calcResult').textContent='Error';
+    $('calcResult').className='calc-result';
+    calcExprStr='';
+    calcJustEvaled=false;
+  }
+}
+function factorial(n){ if(n<0) return NaN; if(n===0||n===1) return 1; let r=1; for(let i=2;i<=n;i++) r*=i; return r; }
+
+/* ══════════════════════════════════════
+   TAB SWITCHER
+══════════════════════════════════════ */
+const tabMap={
+  chat:  {panel:'chat-panel',   nav:'nav-chat'},
+  notes: {panel:'notes-panel',  nav:'nav-notes'},
+  scan:  {panel:'scan-panel',   nav:'nav-scan'},
+  calc:  {panel:'calc-panel',   nav:'nav-calc'},
+};
+
+function switchTab(tab){
+  // stop camera if leaving scan
+  if(tab!=='scan') stopCamera();
+  Object.entries(tabMap).forEach(([key,val])=>{
+    $(val.panel).classList.toggle('active', key===tab);
+    $(val.nav).classList.toggle('active', key===tab);
+  });
+}
+
+/* ══════════════════════════════════════
+   INIT
+══════════════════════════════════════ */
+renderHistList();
+scrollBottom();
+</script>
+</body>
+</html>
